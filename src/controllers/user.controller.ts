@@ -3,29 +3,30 @@ import { ApiResponse } from "../utils/ApiResponse";
 import { Request, Response } from "express";
 import { buildPaginationResponse, parsePagination } from "../utils/pagination";
 import { validateBody } from "../middlewares/validate";
-import { UpdateUserDto } from "../dtos/user.dto";
+import {  UserDto } from "../dtos/user.dto";
+import { UpdateUserDto } from "../dtos/update_user.dto";
 
 
-// export const registerUser = [
-//   validateBody(CreateUserDto),
-//   async (req: Request, res: Response) => {
-//     try {
-//       const result = await userService.register(req.body);
-//       return ApiResponse.created(res, "User created", result);
-//     } catch (err: any) {
-//       // Provide clear error messages
-//       return ApiResponse.badRequest(res, err.message || "Registration failed");
-//     }
-//   }
-// ];
-export const registerUser = async (req: Request, res: Response) => {
-  try {
-    const user = await userService.register(req.body);
-    return ApiResponse.created(res, "User created", user);
-  } catch (error: any) {
-    return ApiResponse.badRequest(res, error.message);
+export const registerUser = [
+  validateBody(UserDto),
+  async (req: Request, res: Response) => {
+    try {
+      const result = await userService.register(req.body);
+      return ApiResponse.created(res, "User created", result);
+    } catch (err: any) {
+      // Provide clear error messages
+      return ApiResponse.badRequest(res, err.message || "Registration failed");
+    }
   }
-};
+];
+// export const registerUser = async (req: Request, res: Response) => {
+//   try {
+//     const user = await userService.register(req.body);
+//     return ApiResponse.created(res, "User created", user);
+//   } catch (error: any) {
+//     return ApiResponse.badRequest(res, error.message);
+//   }
+// };
 
 
 export const loginUser = async (req: Request, res: Response) => {
@@ -68,13 +69,20 @@ export const updateUser = [
   validateBody(UpdateUserDto),
   async (req: Request, res: Response) => {
     try {
-      const id = parseInt(req.params.id);
+      const id = Number(req.params.id);
+      if (isNaN(id)) return ApiResponse.badRequest(res, "Invalid user ID");
+
       const updated = await userService.update(id, req.body);
       return ApiResponse.success(res, updated);
+
     } catch (err: any) {
-      // choose 404 or 400 based on message (simple heuristic)
-      if (/not found/i.test(err.message)) return ApiResponse.badRequest(res, err.message);
-      return ApiResponse.badRequest(res, err.message || "Update failed");
+      const msg = err.message || "Update failed";
+
+      if (/not found/i.test(msg)) {
+        return ApiResponse.badRequest(res, msg);
+      }
+
+      return ApiResponse.badRequest(res, msg);
     }
   }
 ];

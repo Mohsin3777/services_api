@@ -1,5 +1,7 @@
 import { DataSource } from "typeorm";
 import { User } from "../entities/user";
+import { Service } from "../entities/Service";
+import { ServiceSlot } from "../entities/ServiceSlot";
 
 export const AppDataSource = new DataSource({
   type: 'mysql',
@@ -11,6 +13,6 @@ export const AppDataSource = new DataSource({
   synchronize: true,
   logging: false,
   entities: [
-    User
+    User,Service,ServiceSlot
   ],
 });

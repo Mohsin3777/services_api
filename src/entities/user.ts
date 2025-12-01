@@ -5,6 +5,8 @@ import {
   ManyToOne,
   OneToMany
 } from 'typeorm';
+import { ProviderMeta } from '../interface/provider-meta.interface';
+import { Service } from './Service';
 
 
 export type UserRole = "USER" | "PROVIDER";
@@ -56,7 +58,20 @@ export class User {
   
   // store provider-specific dynamic data here (availability, bio, servicesMeta)
   @Column({ type: "json", nullable: true })
-  providerMeta?: Record<string, any>;
+  providerMeta?: ProviderMeta;
+
+
+
+    @Column({nullable: true})
+  token!: string;
+
+
+    @OneToMany(() => Service, (service) => service.provider)
+  services!: Service[];
+
+
+
+  
 
 
 

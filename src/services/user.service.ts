@@ -1,8 +1,11 @@
 import { AppDataSource } from "../config/ormconfig";
 import { User } from "../entities/user";
-import { UpdateUserDto, UserDto, UserRole } from "../dtos/user.dto";
+import { UserDto, UserRole } from "../dtos/user.dto";
 import * as bcrypt from "bcrypt";
 import jwt from 'jsonwebtoken';
+import { UpdateUserDto } from "../dtos/update_user.dto";
+import merge from "lodash/merge";
+import { ProviderMeta } from "../interface/provider-meta.interface";
 
 export class UserService {
   private userRepo = AppDataSource.getRepository(User);
@@ -71,38 +74,46 @@ async getAll({ offset, limit, sortBy, order, page }: { offset:number; limit:numb
       { expiresIn: '1d' }
     );
 
-    return  user;
+    user.token=token;
+
+    return  {user};
 
   }
 
 
 
-    async update(id: number, payload: UpdateUserDto) {
+  
+  async update(id: number, payload: UpdateUserDto) {
     const user = await this.userRepo.findOne({ where: { id } });
     if (!user) throw new Error("User not found");
 
-    // Prevent invalid role change
+    // --- Validate role change safely ---
     if (payload.role && !Object.values(UserRole).includes(payload.role)) {
       throw new Error(`Invalid role. Allowed: ${Object.values(UserRole).join(", ")}`);
     }
 
-    // if password is changing, hash it
+    // --- Hash password if provided ---
     if (payload.password) {
-      // no await leakage, hash before merging
-      const hashed = await bcrypt.hash(payload.password, 10);
-      (payload as any).password = hashed;
+      payload.password = await bcrypt.hash(payload.password, 10);
     }
 
-    // Merge: only update fields present in payload
-    const updatable = { ...payload };
+    // Prepare shallow fields (remove undefined fields)
+    const updatable: Record<string, any> = {};
+    for (const key of Object.keys(payload)) {
+      const value = (payload as any)[key];
+      if (value !== undefined) updatable[key] = value;
+    }
 
-    // If providerMeta exists, merge it shallowly with existing providerMeta
+    // --- Merge providerMeta deeply if provided ---
     if (payload.providerMeta) {
-      updatable.providerMeta = { ...(user.providerMeta || {}), ...(payload.providerMeta as Record<string, any>) };
+      const existing = user.providerMeta || {};
+      updatable.providerMeta = merge({}, existing, payload.providerMeta as ProviderMeta);
     }
 
-    const merged = this.userRepo.merge(user, updatable);
-    return await this.userRepo.save(merged);
+    // Merge values safely
+    const mergedUser = this.userRepo.merge(user, updatable);
+
+    return await this.userRepo.save(mergedUser);
   }
 
 }
