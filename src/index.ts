@@ -9,7 +9,8 @@ import express,{Request, Response} from 'express';
 import { AppDataSource } from './config/ormconfig';
 import userRoutes from './routes/user.routes';
 
-import serviceRoute from './routes/service.routes';
+import serviceRoute from '../src/routes/service.routes';
+import bookingRoute from './routes/booking.routes';
 
 
 // Create Express app
@@ -18,6 +19,7 @@ app.use(express.json());
 
 app.use('/api/users', userRoutes);
 app.use('/api/service', serviceRoute);
+app.use('/api/booking', bookingRoute);
 
 
 app.get('/',(req:Request,res:Response)=>{

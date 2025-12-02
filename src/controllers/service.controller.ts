@@ -17,3 +17,20 @@ var providerId=Number(req.query.providerId)
     return ApiResponse.badRequest(res, err.message);
   }
 };
+
+
+
+
+
+export const getServiceById = async (req: Request, res: Response) => {
+  try {
+console.log("MOHSS")
+    // const providerId = req.user.id; // assuming auth middleware
+var serviceId=Number(req.query.serviceId)
+    const service = await serviceService.getService(serviceId);
+
+    return ApiResponse.created(res, "get service", service);
+  } catch (err: any) {
+    return ApiResponse.badRequest(res, err.message);
+  }
+};
