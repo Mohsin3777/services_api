@@ -13,6 +13,11 @@ export class ApiResponse {
     return res.status(400).json({ success: false, message });
   }
 
+    // Update specific responses
+  static updated(res: Response, message: string, data?: any) {
+    return res.status(200).json({ success: true, message, data });
+  }
+
   static conflict(res: Response, message: string) {
     return res.status(409).json({ success: false, message });
   }

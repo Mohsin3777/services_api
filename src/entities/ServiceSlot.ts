@@ -1,5 +1,6 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from "typeorm";
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToOne, JoinColumn, CreateDateColumn, UpdateDateColumn, OneToMany } from "typeorm";
 import { Service } from "./Service";
+import { Booking } from "./Booking";
 
 @Entity()
 export class ServiceSlot {
@@ -7,14 +8,47 @@ export class ServiceSlot {
   id!: number;
 
   @Column()
-  day!: string; // mon, tue, wed...
+  day!: string;
 
   @Column()
-  startTime!: string; // "10:00"
+  startTime!: string;
 
   @Column()
-  endTime!: string; // "12:00"
+  endTime!: string;
 
-  @ManyToOne(() => Service, service => service.slots)
+  @Column()
+  slotDate!: string; // YYYY-MM-DD
+
+  @ManyToOne(() => Service, service => service.slots, {
+    nullable: false,
+    onDelete: "CASCADE",
+  })
   service!: Service;
+
+  @Column({ default: true })
+  isAvailable!: boolean;
+
+  @Column({
+    type: "enum",
+    enum: ["ACTIVE", "CANCELLED", "MODIFIED"],
+    default: "ACTIVE",
+  })
+  status!: "ACTIVE" | "CANCELLED" | "MODIFIED";
+
+  @Column({ type: "json", nullable: true })
+  metadata?: {
+    generatedFromTemplateId?: number;
+    originalTime?: string;
+    notes?: string;
+  };
+
+  // ✅ One slot → many bookings
+  @OneToMany(() => Booking, booking => booking.serviceSlot)
+  bookings!: Booking[];
+
+  @CreateDateColumn()
+  createdAt!: Date;
+
+  @UpdateDateColumn()
+  updatedAt!: Date;
 }

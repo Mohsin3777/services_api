@@ -5,6 +5,7 @@ import { CreateBookingDto } from "../dtos/create-booking.dto";
 import { BookingService } from "../services/booking.service";
 import { ApiResponse } from "../utils/ApiResponse";
 import { AuthRequest } from "../middlewares/authMiddleware";
+import { buildPaginationResponse, parsePagination } from "../utils/pagination";
 
 const bookingService = new BookingService();
 
@@ -27,3 +28,18 @@ console.log(id)
     }
   },
 ];
+
+
+export const getUserBookings = async (_req: AuthRequest, res: Response) => {
+  try {
+            var userId = Number(_req.user?.id);
+        const { page, limit, sortBy, order, offset } = parsePagination(_req.query);
+            const { data, total } = await bookingService.getMyBookingList({userId, offset, limit, sortBy, order, page });
+    return ApiResponse.success(res, buildPaginationResponse(data, page, limit, total));
+
+
+    
+  } catch (error) {
+    return ApiResponse.error(res, "Server error", error);
+  }
+};

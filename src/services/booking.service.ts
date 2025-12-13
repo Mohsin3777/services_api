@@ -3,56 +3,86 @@ import { AppDataSource } from "../config/ormconfig";
 import { Booking } from "../entities/Booking";
 import { Service } from "../entities/Service";
 import { CreateBookingDto } from "../dtos/create-booking.dto";
+import { ServiceSlot } from "../entities/ServiceSlot";
 
 export class BookingService {
   bookingRepo = AppDataSource.getRepository(Booking);
   serviceRepo = AppDataSource.getRepository(Service);
+       slotRepo = AppDataSource.getRepository(ServiceSlot);
 
   async create(userId: number, dto: CreateBookingDto) {
 
-    console.log("Service Id  "+dto.serviceId)
-    const service = await this.serviceRepo.findOne({
-      where: { id: dto.serviceId },
-        relations: ["slots"]
-    });
-    if (!service) throw new Error("Service not found");
+   return AppDataSource.transaction(async manager =>{
+ const bookingRepo = manager.getRepository(Booking);
+      const slotRepo = manager.getRepository(ServiceSlot);
+      const serviceRepo = manager.getRepository(Service);
 
-    const slots = service.serviceMeta?.slots || [];
 
-    const slotExists = slots.some(
-      (s: any) =>
-        s.day === dto.day &&
-        s.startTime === dto.startTime &&
-        s.endTime === dto.endTime
-    );
+if(userId===dto.providerId){
+          throw new Error("You cant book your service");
 
-    if (!slotExists)
-      throw new Error("Invalid slot. This slot does not exist for this service");
+}
 
-    // Check if slot is available
-    const conflict = await this.bookingRepo.findOne({
-      where: {
-        service: { id: dto.serviceId },
-        day: dto.day,
-        startTime: dto.startTime,
-        endTime: dto.endTime,
+            // 1️⃣ Load slot
+      const slot = await slotRepo.findOne({
+        where: { id: dto.serviceSlotId },
+        relations: { service: true },
+      });
+
+      console.log(slot)
+
+
+         if (!slot) {
+        throw new Error("Slot not found");
+      }
+
+      // 2️⃣ Ensure slot belongs to service
+      if (slot.service.id !== dto.serviceId) {
+        throw new Error("Slot does not belong to this service");
+      }
+
+      // 3️⃣ Check availability
+      if (!slot.isAvailable) {
+        throw new Error("Slot is not available");
+      }
+
+         // 4️⃣ Create booking
+      const booking = bookingRepo.create({
+        user: { id: userId } as any,
+        service: slot.service,
+        serviceSlot: slot,
+        day: slot.day,
+        startTime: slot.startTime,
+        endTime: slot.endTime,
+        amount: slot.service.price, // or calculate
+        bookingDetails: dto.bookingDetails,
         status: "CONFIRMED",
-      },
-    });
+      });
 
-    if (conflict)
-      throw new Error("This slot is already booked by another user");
+      await bookingRepo.save(booking);
 
-    // Create booking
-    const booking = this.bookingRepo.create({
-      user: { id: userId },
-      service: { id: dto.serviceId },
-      day: dto.day,
-      startTime: dto.startTime,
-      endTime: dto.endTime,
-      status: "CONFIRMED",
-    });
+      // 5️⃣ Mark slot unavailable
+      slot.isAvailable = false;
+      await slotRepo.save(slot);
 
-    return await this.bookingRepo.save(booking);
+
+            return booking;
+
+   })
   }
+
+
+
+
+  async getMyBookingList({userId, offset, limit, sortBy, order, page }: {userId:number, offset:number; limit:number; sortBy:string; order:"ASC"|"DESC"; page:number }) {
+    const [data, total] = await this.bookingRepo.findAndCount({
+        where: { user: { id: userId } }, // If it's a relation
+    relations: ['user','service'], // Include user data if needed
+      order: { [sortBy]: order },
+      skip: offset,
+      take: limit
+    });
+    return { data, total, page, limit };
+  }
+
 }

@@ -4,13 +4,15 @@ import { IsNumber, IsString } from "class-validator";
 export class CreateBookingDto {
   @IsNumber()
   serviceId!: number;
+  @IsNumber()
+  serviceSlotId!: number;
 
-  @IsString()
-  day!: string;
+    @IsNumber()
+  providerId!: number;
 
-  @IsString()
-  startTime!: string;
-
-  @IsString()
-  endTime!: string;
+  bookingDetails?: {
+    notes?: string;
+    specialRequirements?: string;
+    attendees?: number;
+  }
 }

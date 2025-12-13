@@ -3,6 +3,7 @@ import { Request, Response } from "express";
 import { serviceService } from "../services/service.service";
 import { CreateServiceDto } from "../dtos/create-service.dto";
 import { validateBody } from "../middlewares/validate";
+import { UpdateServiceDto } from "../dtos/update_service_dto";
 
 export const createService = async (req: Request, res: Response) => {
   try {
@@ -29,7 +30,26 @@ console.log("MOHSS")
 var serviceId=Number(req.query.serviceId)
     const service = await serviceService.getService(serviceId);
 
-    return ApiResponse.created(res, "get service", service);
+    return ApiResponse.success(res,  service);
+  } catch (err: any) {
+    return ApiResponse.badRequest(res, err.message);
+  }
+};
+
+
+
+
+export const editService = async (req: Request, res: Response) => {
+  try {
+      validateBody(UpdateServiceDto);
+
+    // const providerId = req.user.id; // assuming auth middleware
+var providerId=Number(req.query.providerId)
+var serviceId=Number(req.query.serviceId)
+
+    const created = await serviceService.updateService(serviceId,providerId, req.body);
+
+    return ApiResponse.updated(res, "Service updated", created);
   } catch (err: any) {
     return ApiResponse.badRequest(res, err.message);
   }

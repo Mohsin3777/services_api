@@ -1,8 +1,11 @@
 // dto/create-service.dto.ts
-import { IsString, IsOptional, IsArray, ValidateNested, IsObject, IsBoolean } from "class-validator";
+import { IsString, IsOptional, IsArray, ValidateNested, IsObject, IsBoolean, IsNumber } from "class-validator";
 import { Type } from "class-transformer";
 
 class SlotDto {
+@IsOptional()
+@IsNumber()
+    id?: number;
   @IsString()
   day!: string;
 
@@ -23,12 +26,21 @@ class SlotDto {
     @IsOptional()
   @IsObject()
   meta?: Record<string, any>;
+
+
+     @IsNumber()
+    serviceId!: number;
+    @IsOptional()
+@IsBoolean()
+      isAvailable!: boolean;
+
 }
 
-export class CreateServiceDto {
+export class UpdateServiceDto {
+     @IsOptional()
   @IsString()
   title!: string;
-
+ @IsOptional()
   @IsString()
   description!: string;
 
@@ -40,15 +52,15 @@ export class CreateServiceDto {
   @IsString()
   price?: number;
 
-   @IsOptional()
+    @IsOptional()
   @IsBoolean()
-  isActive?: boolean = true;
+  isActive?: boolean ;
 
   // Flexible meta: pricing, durations, categories, etc.
   @IsOptional()
   @IsObject()
   serviceMeta?: Record<string, any>;
-
+ @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => SlotDto)
