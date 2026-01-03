@@ -1,9 +1,9 @@
 import { Service } from "../entities/Service";
 import { ServiceSlot } from "../entities/ServiceSlot";
-import { CreateServiceDto } from "../dtos/create-service.dto";
+import { CreateServiceDto, SlotDto } from "../dtos/create-service.dto";
 import { AppDataSource } from "../config/ormconfig";
 import { mapCreateService } from "./service.mapper";
-import { UpdateServiceDto } from "../dtos/update_service_dto";
+import { UpdateServiceDto, UpdateSlotDto } from "../dtos/update_service_dto";
 
 
 
@@ -105,6 +105,8 @@ console.log("SERVCE" +mapped)
         .createQueryBuilder("service")
         .addSelect("service.serviceMeta")
         .leftJoinAndSelect("service.slots", "slots")
+        .addSelect("slots.isAvailable")
+
         .where("service.id = :id", { id: serviceId })
         .andWhere("service.providerId = :providerId", { providerId })
         .getOne();
@@ -120,36 +122,11 @@ console.log("SERVCE" +mapped)
       if (dto.isActive !== undefined) service.isActive = dto.isActive;
       if (dto.price !== undefined) service.price = dto.price;
 
-      // 3️⃣ Merge serviceMeta
-      if (dto.serviceMeta) {
-        service.serviceMeta = {
-          ...(service.serviceMeta ?? {}),
-          ...dto.serviceMeta,
-        };
-      }
-
-      // 4️⃣ Update slots
-      // if (dto.slots) {
-      //   await slotRepo.delete({
-      //     service: { id: serviceId },
-      //   });
-
-      //   const newSlots = dto.slots.map(s =>
-      //     slotRepo.create({
-      //       day: s.day,
-      //       startTime: s.startTime,
-      //       endTime: s.endTime,
-      //       slotDate: s.slotDate,
-      //     service: service,
-      //     })
-      //   );
-
-      //   await slotRepo.save(newSlots);
-      // }
-
-
+    console.log(dto.slots)
 // 4️⃣ Update slots (SMART UPDATE)
 if (dto.slots) {
+
+
   const existingSlots = service.slots;
 
   // incoming slot IDs
@@ -158,47 +135,61 @@ if (dto.slots) {
     .map(s => s.id);
 
   // OPTIONAL: delete removed slots
-  const toDelete = existingSlots.filter(
-    slot => !incomingIds.includes(slot.id)
-  );
+  // const toDelete = existingSlots.filter(
+  //   slot => !incomingIds.includes(slot.id)
+  // );
 
-  if (toDelete.length) {
-    await slotRepo.remove(toDelete);
+  // if (toDelete.length) {
+  //   await slotRepo.remove(toDelete);
+  // }
+
+
+  for (const slot of existingSlots) {
+  if (!incomingIds.includes(slot.id)) {
+    await slotRepo.update(slot.id, {
+      status: "CANCELLED",
+      isAvailable: false,
+    });
   }
-
-  for (const s of dto.slots) {
-    if (s.id) {
-console.log(`HEEE ${s.isAvailable}`)
-if(s.isAvailable===false){
-
-        throw new Error("Cant Update Booked Slot");
-        
 }
 
-      // 🔵 UPDATE EXISTING SLOT
-      await slotRepo.update(
-        { id: s.id },
-        {
-          day: s.day,
-          startTime: s.startTime,
-          endTime: s.endTime,
-          slotDate: s.slotDate,
-        }
-      );
-    } else {
-      // 🟢 CREATE NEW SLOT
-      const newSlot = slotRepo.create({
+for (const s of dto.slots) {
+  if (s.id) {
+    const dbSlot = service.slots.find(slot => slot.id === s.id);
+
+    if (!dbSlot) {
+      throw new Error("Slot not found");
+    }
+
+    // 🔒 HARD LOCK
+    if (dbSlot.isAvailable === false) {
+      throw new Error("Cannot update a booked slot");
+    }
+
+    await slotRepo.update(
+      { id: s.id },
+      {
         day: s.day,
         startTime: s.startTime,
         endTime: s.endTime,
         slotDate: s.slotDate,
-        isAvailable: true,      // 👈 REQUIRED
-        service: service,       // 👈 REAL ENTITY
-      });
+         status: "MODIFIED",
+      }
+    );
+  } else {
+    // 🟢 NEW SLOT
+    const newSlot = slotRepo.create({
+      day: s.day,
+      startTime: s.startTime,
+      endTime: s.endTime,
+      slotDate: s.slotDate,
+      isAvailable: true,
+      service: service,
+    });
 
-      await slotRepo.save(newSlot);
-    }
+    await slotRepo.save(newSlot);
   }
+}
 }
 
 
@@ -215,6 +206,157 @@ if(s.isAvailable===false){
         .getOne();
     });
   }
+
+
+
+  async updateServiceInfo(
+  // manager: EntityManager,
+  serviceId: number,
+      providerId: number,
+
+  dto: UpdateServiceDto
+) {
+
+const service = await this.serviceRepo
+        .createQueryBuilder("service")
+        .addSelect("service.serviceMeta")
+        .leftJoinAndSelect("service.slots", "slots")
+        .addSelect("slots.isAvailable")
+
+        .where("service.id = :id", { id: serviceId })
+        .andWhere("service.providerId = :providerId", { providerId })
+        .getOne();
+
+      if (!service) {
+        throw new Error("Service not found or unauthorized");
+      }
+
+
+
+  if (dto.title !== undefined) service.title = dto.title;
+  if (dto.description !== undefined) service.description = dto.description;
+  if (dto.image !== undefined) service.image = dto.image;
+  if (dto.isActive !== undefined) service.isActive = dto.isActive;
+  if (dto.price !== undefined) service.price = dto.price;
+
+  return this.serviceRepo.save(service);
+}
+
+
+async syncServiceSlots(
+ // manager: EntityManager,
+  service: Service,
+  slotsDto: UpdateSlotDto[]
+) {
+
+  const existingSlots = service.slots;
+  const incomingIds = slotsDto.filter(s => s.id).map(s => s.id);
+
+  // 🔒 Cancel removed slots (NOT delete)
+  for (const slot of existingSlots) {
+    if (!incomingIds.includes(slot.id)) {
+      await this.slotRepo.update(slot.id, {
+        status: "CANCELLED",
+        isAvailable: false,
+      });
+    }
+  }
+
+  // 🔁 Update or Create
+  for (const s of slotsDto) {
+    if (s.id) {
+      await this.updateSlot( service, s);
+    } else {
+      await this.createSlot( service, s);
+    }
+  }
+}
+private async updateSlot(
+  service: Service,
+  dto: UpdateSlotDto
+) {
+  const slot = await this.slotRepo.findOne({
+    where: { id: dto.id, service: { id: service.id } },
+  });
+
+  if (!slot) throw new Error("Slot not found");
+  if (!slot.isAvailable) throw new Error("Booked slot cannot be modified");
+
+  await this.slotRepo.update(slot.id, {
+    day: dto.day,
+    startTime: dto.startTime,
+    endTime: dto.endTime,
+    slotDate: dto.slotDate,
+    status: "MODIFIED",
+  });
+}
+private async createSlot(
+  service: Service,
+  dto: UpdateSlotDto
+) {
+  const slot = this.slotRepo.create({
+    day: dto.day,
+    startTime: dto.startTime,
+    endTime: dto.endTime,
+    slotDate: dto.slotDate,
+    isAvailable: true,
+    service,
+  });
+
+  await this.slotRepo.save(slot);
+}
+
+
+
+
+  async getServicesWithUserId({
+  userId,
+  limit,
+  page,
+  sortBy,
+  order,
+}: {
+  userId: number;
+  limit: number;
+  page: number;
+  sortBy: string;
+  order: "ASC" | "DESC";
+}) {
+  const take = limit;
+  const skip = (page - 1) * limit;
+
+  const [services, total] = await this.serviceRepo
+    .createQueryBuilder("service")
+    .leftJoinAndSelect("service.slots", "slots")
+
+    // ✅ Join provider but select limited fields
+    .leftJoin("service.provider", "provider")
+    .addSelect([
+      "provider.id",
+      "provider.firstName",
+      "provider.profileImage",
+      "provider.role",
+    ])
+
+    // ✅ If serviceMeta is not eager
+  //  .addSelect("service.serviceMeta")
+
+    .where("provider.id = :id", { id: userId })
+
+    // ✅ Sorting
+    .orderBy(`service.${sortBy}`, order)
+
+    // ✅ Pagination
+    .skip(skip)
+    .take(take)
+
+    // ✅ Needed for pagination total count
+    .getManyAndCount();
+    return { services, total, page, limit };
+
+
+}
+
 }
 
 export const serviceService = new ServiceService();

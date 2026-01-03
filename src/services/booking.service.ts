@@ -85,4 +85,16 @@ if(userId===dto.providerId){
     return { data, total, page, limit };
   }
 
+
+
+
+
+    async getBookingWithId({bookingId }: {bookingId:number, }) {
+    const data = await this.bookingRepo.findOne({
+        where: {  id:bookingId }, // If it's a relation
+    relations: ['user','service'], // Include user data if needed
+  
+    });
+    return { data, };
+  }
 }

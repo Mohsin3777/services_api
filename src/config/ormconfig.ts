@@ -11,7 +11,7 @@ export const AppDataSource = new DataSource({
   port: 3306,
   username: 'root',
 //  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
+  database: 'services_app',
   synchronize: true,
   logging: false,
   entities: [

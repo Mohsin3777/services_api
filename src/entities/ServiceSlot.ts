@@ -17,7 +17,7 @@ export class ServiceSlot {
   endTime!: string;
 
   @Column()
-  slotDate!: string; // YYYY-MM-DD
+  slotDate!: Date; // YYYY-MM-DD
 
   @ManyToOne(() => Service, service => service.slots, {
     nullable: false,

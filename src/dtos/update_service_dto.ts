@@ -1,5 +1,5 @@
 // dto/create-service.dto.ts
-import { IsString, IsOptional, IsArray, ValidateNested, IsObject, IsBoolean, IsNumber } from "class-validator";
+import { IsString, IsOptional, IsArray, ValidateNested, IsObject, IsBoolean, IsNumber, IsDate, MinDate, IsEnum } from "class-validator";
 import { Type } from "class-transformer";
 
 class SlotDto {
@@ -16,8 +16,13 @@ class SlotDto {
   endTime!: string;
 
 
-    @IsString()
-  slotDate!: string;
+    // ✅ Convert string → Date
+  @Type(() => Date)
+  @IsDate()
+  @MinDate(new Date(), {
+    message: "slotDate cannot be in the past",
+  })
+  slotDate!: Date;
 
     @IsOptional()
   @IsBoolean()
@@ -65,4 +70,43 @@ export class UpdateServiceDto {
   @ValidateNested({ each: true })
   @Type(() => SlotDto)
   slots!: SlotDto[];
+}
+
+
+
+
+
+
+export class UpdateSlotDto {
+  // 🔑 Required for updating existing slot
+  @IsOptional()
+  @IsNumber()
+  id?: number;
+
+  @IsOptional()
+  @IsString()
+  day?: string;
+
+  @IsOptional()
+  @IsString()
+  startTime?: string;
+
+  @IsOptional()
+  @IsString()
+  endTime?: string;
+
+  @IsOptional()
+  @Type(() => Date)
+  @IsDate()
+  slotDate?: Date;
+
+  // ❌ frontend should NOT control this
+  // backend manages booking state
+  @IsOptional()
+  @IsBoolean()
+  isAvailable?: boolean;
+
+  @IsOptional()
+  @IsEnum(["ACTIVE", "CANCELLED", "MODIFIED"])
+  status?: "ACTIVE" | "CANCELLED" | "MODIFIED";
 }

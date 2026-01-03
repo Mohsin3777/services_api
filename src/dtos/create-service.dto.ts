@@ -1,8 +1,8 @@
 // dto/create-service.dto.ts
-import { IsString, IsOptional, IsArray, ValidateNested, IsObject, IsBoolean } from "class-validator";
+import { IsString, IsOptional, IsArray, ValidateNested, IsObject, IsBoolean, IsDate, MinDate } from "class-validator";
 import { Type } from "class-transformer";
 
-class SlotDto {
+export class SlotDto {
   @IsString()
   day!: string;
 
@@ -13,8 +13,15 @@ class SlotDto {
   endTime!: string;
 
 
-    @IsString()
-  slotDate!: string;
+  //   @IsString()
+  // slotDate!: string;
+    // ✅ Convert string → Date
+  @Type(() => Date)
+  @IsDate()
+  @MinDate(new Date(), {
+    message: "slotDate cannot be in the past",
+  })
+  slotDate!: Date;
 
     @IsOptional()
   @IsBoolean()

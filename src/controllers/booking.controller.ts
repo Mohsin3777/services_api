@@ -43,3 +43,25 @@ export const getUserBookings = async (_req: AuthRequest, res: Response) => {
     return ApiResponse.error(res, "Server error", error);
   }
 };
+
+
+
+ export const getBookingWithId = async (req: Request, res: Response) => {
+    try {
+            var bookingId = Number(req.query.bookingId);
+console.log(bookingId)
+
+      if (isNaN(bookingId)) return ApiResponse.badRequest(res, "Invalid booking id");
+
+
+      const booking = await bookingService.getBookingWithId({bookingId:Number(bookingId)});
+
+
+          return ApiResponse.created(res, "Get Booking", booking);
+      
+   
+    } catch (err: any) {
+            return ApiResponse.badRequest(res, err.message);
+
+    }
+  };
