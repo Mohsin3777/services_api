@@ -357,6 +357,59 @@ private async createSlot(
 
 }
 
+
+
+//get random services
+
+
+
+  async getRandomServicesList({
+    search,
+  limit,
+  page,
+  sortBy,
+  order,
+}: {
+  search:string;
+  limit: number;
+  page: number;
+  sortBy: string;
+  order: "ASC" | "DESC";
+}) {
+  const take = limit;
+  const skip = (page - 1) * limit;
+
+  const [services, total] = await this.serviceRepo
+    .createQueryBuilder("service")
+    .leftJoinAndSelect("service.slots", "slots")
+
+    // ✅ Join provider but select limited fields
+    .leftJoin("service.provider", "provider")
+    .addSelect([
+      "provider.id",
+      "provider.firstName",
+      "provider.profileImage",
+      "provider.role",
+    ])
+
+.where("provider.firstName LIKE :firstName", { firstName: `${search}%` })
+
+
+    // ✅ Sorting
+    .orderBy(`service.${sortBy}`, order)
+
+    // ✅ Pagination
+    .skip(skip)
+    .take(take)
+
+    // ✅ Needed for pagination total count
+    .getManyAndCount();
+    return { services, total, page, limit };
+
+
+}
+
+
 }
 
 export const serviceService = new ServiceService();

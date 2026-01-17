@@ -1,6 +1,7 @@
 // dto/create-service.dto.ts
-import { IsString, IsOptional, IsArray, ValidateNested, IsObject, IsBoolean, IsDate, MinDate } from "class-validator";
+import { IsString, IsOptional, IsArray, ValidateNested, IsObject, IsBoolean, IsDate, MinDate, IsIn, IsDefined, IsNotEmpty, IsEnum } from "class-validator";
 import { Type } from "class-transformer";
+import { UserRole } from "./user.dto";
 
 export class SlotDto {
   @IsString()
@@ -60,4 +61,15 @@ export class CreateServiceDto {
   @ValidateNested({ each: true })
   @Type(() => SlotDto)
   slots!: SlotDto[];
+
+
+
+
+
+  @IsDefined({ message: "role is required" })
+  @IsIn(["PROVIDER"], {
+    message: 'role must be "PROVIDER"',
+  })
+  role!: string;
+
 }

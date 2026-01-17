@@ -5,6 +5,7 @@ import { buildPaginationResponse, parsePagination } from "../utils/pagination";
 import { validateBody } from "../middlewares/validate";
 import {  UserDto } from "../dtos/user.dto";
 import { UpdateUserDto } from "../dtos/update_user.dto";
+import { AuthRequest } from "../middlewares/authMiddleware";
 
 
 export const registerUser = [
@@ -86,3 +87,17 @@ export const updateUser = [
     }
   }
 ];
+
+export const getUserWithId = async(req: AuthRequest, res: Response)=>{
+          try {
+              var userId = Number(req.user?.id);
+
+console.log(userId)
+var user= await userService.getUserWithId(userId);
+
+return ApiResponse.success(res,user)
+          } catch (error) {
+                return ApiResponse.error(res, " error", error);
+
+          }
+}

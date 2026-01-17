@@ -17,7 +17,7 @@ import bookingRoute from './routes/booking.routes';
 const app = express();
 app.use(express.json());
 
-app.use('/api/users', userRoutes);
+app.use('/api/user', userRoutes);
 app.use('/api/service', serviceRoute);
 app.use('/api/booking', bookingRoute);
 

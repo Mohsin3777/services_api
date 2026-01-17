@@ -116,6 +116,15 @@ async getAll({ offset, limit, sortBy, order, page }: { offset:number; limit:numb
     return await this.userRepo.save(mergedUser);
   }
 
+  async getUserWithId(id: number) {
+    const user = await this.userRepo.findOneBy({id:id});
+  if(!user)
+           throw new Error("user not exists");
+console.log(user)
+  return {user}
+  }
+
+
 }
 
 
