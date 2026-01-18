@@ -1,9 +1,14 @@
-import { IsEmail, IsEnum, IsNotEmpty, IsOptional, IsString, MinLength } from "class-validator";
+import { Type } from "class-transformer";
+import { IsEmail, IsEnum, IsNotEmpty, IsOptional, IsString, MinLength, ValidateNested } from "class-validator";
+import { AddressDto } from "./address.dto";
 export enum UserRole {
   USER = "USER",
-  PROVIDER = "PROVIDER"
+  PROVIDER = "PROVIDER",
+  ADMIN="ADMIN"
 }
 
+
+export enum UserStatus { Active="Active" ,Delete= "Delete" ,Block= "Block"}
 
 export class UserDto {
 
@@ -29,6 +34,14 @@ export class UserDto {
   @IsOptional()
   @IsString()
   providerType?: string;
+
+
+ // ✅ Address (Optional)
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => AddressDto)
+  address?: AddressDto;
+  
 }
 
 

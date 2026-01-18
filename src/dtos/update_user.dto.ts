@@ -1,9 +1,10 @@
 
 import { IsBoolean, IsEmail, IsEnum, IsNumber, IsOptional, IsString, MinLength, ValidateNested } from "class-validator";
-import { UserRole } from "./user.dto";
+import { UserRole, UserStatus } from "./user.dto";
 import { isFloat16Array } from "util/types";
 import { ProviderMetaDto } from "./provider-meta.dto.ts";
 import { Type } from "class-transformer";
+import { AddressDto } from "./address.dto";
 ///Partial update DTO (for PATCH)
 
 
@@ -25,6 +26,11 @@ export class UpdateUserDto {
     @IsOptional()
     @IsString()
     profileImage?: string;
+
+
+     @IsOptional()
+    @IsEnum(UserStatus )
+    userStats?: UserStatus;
 
 
     @IsOptional()
@@ -54,6 +60,10 @@ export class UpdateUserDto {
     providerMeta?: ProviderMetaDto;
 
 
-
+  // ✅ Address (Optional)
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => AddressDto)
+  address?: AddressDto;
 
 }

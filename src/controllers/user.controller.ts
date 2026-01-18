@@ -3,9 +3,10 @@ import { ApiResponse } from "../utils/ApiResponse";
 import { Request, Response } from "express";
 import { buildPaginationResponse, parsePagination } from "../utils/pagination";
 import { validateBody } from "../middlewares/validate";
-import {  UserDto } from "../dtos/user.dto";
+import {  UserDto, UserRole } from "../dtos/user.dto";
 import { UpdateUserDto } from "../dtos/update_user.dto";
-import { AuthRequest } from "../middlewares/authMiddleware";
+import { AuthRequest } from "../interface/auth_requent_interface";
+
 
 
 export const registerUser = [
@@ -67,12 +68,14 @@ export const getUsers = async (_req: Request, res: Response) => {
 
 
 export const updateUser = [
-  validateBody(UpdateUserDto),
+  
   async (req: Request, res: Response) => {
     try {
+
+      
       const id = Number(req.params.id);
       if (isNaN(id)) return ApiResponse.badRequest(res, "Invalid user ID");
-
+console.log(req.body)
       const updated = await userService.update(id, req.body);
       return ApiResponse.success(res, updated);
 
@@ -101,3 +104,33 @@ return ApiResponse.success(res,user)
 
           }
 }
+
+
+
+
+
+export const blockUnBlockUser = [
+  
+  async (req: AuthRequest, res: Response) => {
+    try {
+  if(req.user?.role != UserRole.ADMIN){
+         return   ApiResponse.badRequest(res,"Only Admin can block user");
+          }
+console.log(req.params.id)
+      const id = Number(req.params.id);
+      if (isNaN(id)) return ApiResponse.badRequest(res, "Invalid user ID");
+
+      const updated = await userService.blockUnBlockUser(id, req.body);
+      return ApiResponse.success(res, updated);
+
+    } catch (err: any) {
+      const msg = err.message || "Update failed";
+
+      if (/not found/i.test(msg)) {
+        return ApiResponse.badRequest(res, msg);
+      }
+
+      return ApiResponse.badRequest(res, msg);
+    }
+  }
+];

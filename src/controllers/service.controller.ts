@@ -8,12 +8,14 @@ import { AuthRequest } from "../middlewares/authMiddleware";
 import { buildPaginationResponse, parsePagination } from "../utils/pagination";
 import { UserRole } from "../dtos/user.dto";
 
-export const createService = async (req: Request, res: Response) => {
+export const createService = async (req: AuthRequest, res: Response) => {
   try {
-      validateBody(CreateServiceDto);
-if (req.body.role !== UserRole.PROVIDER) {
-  return  ApiResponse.badRequest(res,"Only providers allowed");
-}
+
+    if(req.user?.role != UserRole.PROVIDER){
+   return   ApiResponse.badRequest(res,"Only providers allowed to create service");
+    }
+      ;
+
     // const providerId = req.user.id; // assuming auth middleware
 var providerId=Number(req.query.providerId)
     const created = await serviceService.createService(providerId, req.body);
@@ -28,9 +30,9 @@ var providerId=Number(req.query.providerId)
 
 
 
-export const getServiceById = async (req: Request, res: Response) => {
+export const getServiceById = async (req: AuthRequest, res: Response) => {
   try {
-console.log("MOHSS")
+console.log(req.user?.role)
     // const providerId = req.user.id; // assuming auth middleware
 var serviceId=Number(req.query.serviceId)
     const service = await serviceService.getService(serviceId);
@@ -44,8 +46,12 @@ var serviceId=Number(req.query.serviceId)
 
 
 
-export const editService = async (req: Request, res: Response) => {
+export const editService = async (req: AuthRequest, res: Response) => {
   try {
+
+      if(req.user?.role != UserRole.PROVIDER){
+   return   ApiResponse.badRequest(res,"Only providers allowed can edit service");
+    }
       validateBody(UpdateServiceDto);
 
     // const providerId = req.user.id; // assuming auth middleware
@@ -69,7 +75,6 @@ var serviceId=Number(req.query.serviceId)
 
 export const getServiceWithUserId = async (req: AuthRequest, res: Response) => {
   try {
-console.log("MOHSS")
     // const providerId = req.user.id; // assuming auth middleware
 var userId=Number(req.query.userId)
         const { page, limit, sortBy, order, offset } = parsePagination(req.query);
