@@ -1,6 +1,10 @@
 
-import { IsEmail, IsEnum, IsOptional, IsString, MinLength } from "class-validator";
-import { UserRole } from "./user.dto";
+import { IsBoolean, IsEmail, IsEnum, IsNumber, IsOptional, IsString, MinLength, ValidateNested } from "class-validator";
+import { UserRole, UserStatus } from "./user.dto";
+import { isFloat16Array } from "util/types";
+import { ProviderMetaDto } from "./provider-meta.dto.ts";
+import { Type } from "class-transformer";
+import { AddressDto } from "./address.dto";
 ///Partial update DTO (for PATCH)
 
 
@@ -18,6 +22,25 @@ export class UpdateUserDto {
     @IsEmail()
     email?: string;
 
+
+    @IsOptional()
+    @IsString()
+    profileImage?: string;
+
+
+     @IsOptional()
+    @IsEnum(UserStatus )
+    userStats?: UserStatus;
+
+
+    @IsOptional()
+    @IsNumber()
+    age?: number;
+
+    @IsOptional()
+    @IsBoolean()
+    profileSetup?: boolean;
+
     @IsOptional()
     @MinLength(6)
     password?: string;
@@ -32,9 +55,15 @@ export class UpdateUserDto {
 
     // free-form provider fields: clients/providers can send `providerMeta` as a plain object
     @IsOptional()
-    providerMeta?: Record<string, any>;
+     @ValidateNested()
+  @Type(() => ProviderMetaDto)
+    providerMeta?: ProviderMetaDto;
 
 
+  // ✅ Address (Optional)
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => AddressDto)
+  address?: AddressDto;
 
-    
 }

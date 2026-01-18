@@ -5,10 +5,14 @@ import {
   ManyToOne,
   OneToMany
 } from 'typeorm';
+import { ProviderMeta } from '../interface/provider-meta.interface';
+import { Service } from './Service';
+import { Address } from './Address';
 
 
-export type UserRole = "USER" | "PROVIDER";
+export type UserRole = "USER" | "PROVIDER" | "ADMIN";
 
+export type UserStatus = "Active" | "Delete" | "Block";
 
 @Entity()
 export class User {
@@ -39,10 +43,11 @@ export class User {
   age!: number;
 
 
-  @Column({ type: "enum", enum: ["USER", "PROVIDER"], default: "USER" })
+  @Column({ type: "enum", enum: ["USER", "PROVIDER","ADMIN"], default: "USER" })
   role!: UserRole;
 
-
+ @Column({ type: "enum", enum: ["Active" , "Delete" , "Block"], default: "Active" })
+  userStatus!: UserStatus;
   
   @Column({ nullable: true })
   providerType?: string; // massage, electrician, painter, etc.
@@ -56,7 +61,25 @@ export class User {
   
   // store provider-specific dynamic data here (availability, bio, servicesMeta)
   @Column({ type: "json", nullable: true })
-  providerMeta?: Record<string, any>;
+  providerMeta?: ProviderMeta;
+
+
+
+    @Column({nullable: true})
+  token!: string;
+
+
+    @OneToMany(() => Service, (service) => service.provider)
+  services!: Service[];
+
+
+
+  
+  // 🔗 One user → many address
+  @OneToMany(() => Address, address => address.user, {
+    cascade: true,
+  })
+  address?: Address[];
 
 
 

@@ -1,11 +1,16 @@
 import { AppDataSource } from "../config/ormconfig";
 import { User } from "../entities/user";
-import { UpdateUserDto, UserDto, UserRole } from "../dtos/user.dto";
+import { UserDto, UserRole, UserStatus } from "../dtos/user.dto";
 import * as bcrypt from "bcrypt";
 import jwt from 'jsonwebtoken';
+import { UpdateUserDto } from "../dtos/update_user.dto";
+import merge from "lodash/merge";
+import { ProviderMeta } from "../interface/provider-meta.interface";
+import { Address } from "../entities/Address";
 
 export class UserService {
   private userRepo = AppDataSource.getRepository(User);
+  private addressRepo = AppDataSource.getRepository(Address);
 
   async register(data: UserDto) {
   
@@ -25,7 +30,7 @@ export class UserService {
       email: data.email,
       password: hashed,
       role: data.role,
-      providerType: data.providerType
+      providerType: data.providerType,
     });
 
     return await this.userRepo.save(user);
@@ -66,45 +71,130 @@ async getAll({ offset, limit, sortBy, order, page }: { offset:number; limit:numb
             throw new Error("Invalid credentials.");
 
           const token = jwt.sign(
-      { id: user?.id },
+      { id: user?.id ,},
       process.env.JWT_SECRET as string,
       { expiresIn: '1d' }
     );
 
-    return  user;
+    user.token=token;
+
+    return  {user};
 
   }
 
 
 
-    async update(id: number, payload: UpdateUserDto) {
-    const user = await this.userRepo.findOne({ where: { id } });
+  
+  async update(id: number, payload: UpdateUserDto) {
+    const user = await this.userRepo.findOne({ where: { id } ,
+      relations: { address: true },
+
+    });
+
+    console.log(payload.address)
     if (!user) throw new Error("User not found");
 
-    // Prevent invalid role change
+    // --- Validate role change safely ---
     if (payload.role && !Object.values(UserRole).includes(payload.role)) {
       throw new Error(`Invalid role. Allowed: ${Object.values(UserRole).join(", ")}`);
     }
 
-    // if password is changing, hash it
+    // --- Hash password if provided ---
     if (payload.password) {
-      // no await leakage, hash before merging
-      const hashed = await bcrypt.hash(payload.password, 10);
-      (payload as any).password = hashed;
+      payload.password = await bcrypt.hash(payload.password, 10);
     }
 
-    // Merge: only update fields present in payload
-    const updatable = { ...payload };
+    //for address
+if (payload.address) {
+  if (user.address?.length) {
+    // Update first address (or default address)
+    Object.assign(user.address[0], payload.address);
+  } else {
+    // Create new address
+    const address = this.addressRepo.create({
+      ...payload.address,
+      user,
+    });
+    user.address = [address];
+  }
+}
+    //for address xxxx
 
-    // If providerMeta exists, merge it shallowly with existing providerMeta
+    // Prepare shallow fields (remove undefined fields)
+    const updatable: Record<string, any> = {};
+    for (const key of Object.keys(payload)) {
+      const value = (payload as any)[key];
+      if (value !== undefined) updatable[key] = value;
+    }
+
+    // --- Merge providerMeta deeply if provided ---
     if (payload.providerMeta) {
-      updatable.providerMeta = { ...(user.providerMeta || {}), ...(payload.providerMeta as Record<string, any>) };
+      const existing = user.providerMeta || {};
+      updatable.providerMeta = merge({}, existing, payload.providerMeta as ProviderMeta);
     }
 
-    const merged = this.userRepo.merge(user, updatable);
-    return await this.userRepo.save(merged);
+    // Merge values safely
+    const mergedUser = this.userRepo.merge(user, updatable);
+
+    return await this.userRepo.save(mergedUser);
   }
 
+
+
+
+  async getUserWithId(id: number) {
+    // const user = await this.userRepo.findOneBy({id:id},
+  
+    // );
+
+    const user = await this.userRepo
+  .createQueryBuilder("user")
+    .addSelect("user.providerMeta")
+
+  .leftJoinAndSelect("user.address", "address")
+  .where("user.id = :id", { id })
+  .getOne();
+  if(!user)
+           throw new Error("user not exists");
+console.log(user)
+  return {user}
+  }
+
+
+  //block unblock user
+   
+  async blockUnBlockUser(id: number, payload: UpdateUserDto) {
+    const user = await this.userRepo.findOne({ where: { id } });
+    if (!user) throw new Error("User not found");
+
+    // --- Validate role change safely ---
+    if (payload.role && !Object.values(UserRole).includes(payload.role)) {
+      throw new Error(`Invalid role. Allowed: ${Object.values(UserRole).join(", ")}`);
+    }
+
+    // --- Hash password if provided ---
+    if (payload.password) {
+      payload.password = await bcrypt.hash(payload.password, 10);
+    }
+
+    // Prepare shallow fields (remove undefined fields)
+    const updatable: Record<string, any> = {};
+    for (const key of Object.keys(payload)) {
+      const value = (payload as any)[key];
+      if (value !== undefined) updatable[key] = value;
+    }
+
+    // --- Merge providerMeta deeply if provided ---
+    if (payload.providerMeta) {
+      const existing = user.providerMeta || {};
+      updatable.providerMeta = merge({}, existing, payload.providerMeta as ProviderMeta);
+    }
+
+    // Merge values safely
+    const mergedUser = this.userRepo.merge(user, updatable);
+
+    return await this.userRepo.save(mergedUser);
+  }
 }
 
 

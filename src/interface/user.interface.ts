@@ -4,6 +4,6 @@ export interface IUser {
    lastName: string;
 
   email?: string;
-  role: "USER" | "PROVIDER";
+  role: "USER" | "PROVIDER" | "ADMIN";
   providerType?: string;
 }
