@@ -10,7 +10,7 @@ import { UserRole } from "../dtos/user.dto";
 
 export const createService = async (req: AuthRequest, res: Response) => {
   try {
-
+console.log(req.user?.role )
     if(req.user?.role != UserRole.PROVIDER){
    return   ApiResponse.badRequest(res,"Only providers allowed to create service");
     }

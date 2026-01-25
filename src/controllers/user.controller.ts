@@ -75,7 +75,7 @@ export const updateUser = [
       
       const id = Number(req.params.id);
       if (isNaN(id)) return ApiResponse.badRequest(res, "Invalid user ID");
-console.log(req.body)
+// console.log(req.body)
       const updated = await userService.update(id, req.body);
       return ApiResponse.success(res, updated);
 

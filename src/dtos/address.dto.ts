@@ -10,14 +10,14 @@ export class AddressDto {
   @IsOptional()
   @Type(() => Number)
   @IsNumber()
-  @Min(-90)
-  @Max(90)
+  // @Min(-90)
+  // @Max(90)
   latitude?: number;
 
   @IsOptional()
   @Type(() => Number)
   @IsNumber()
-  @Min(-180)
-  @Max(180)
+  // @Min(-180)
+  // @Max(180)
   longitude?: number;
 }

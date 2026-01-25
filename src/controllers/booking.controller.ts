@@ -49,15 +49,17 @@ export const getUserBookings = async (_req: AuthRequest, res: Response) => {
  export const getBookingWithId = async (req: Request, res: Response) => {
     try {
             var bookingId = Number(req.query.bookingId);
+                        var userId = Number(req.query.userId);
+
 console.log(bookingId)
 
       if (isNaN(bookingId)) return ApiResponse.badRequest(res, "Invalid booking id");
 
 
-      const booking = await bookingService.getBookingWithId({bookingId:Number(bookingId)});
+      const booking = await bookingService.getBookingWithId({bookingId:Number(bookingId),userId:Number(userId)});
 
 
-          return ApiResponse.created(res, "Get Booking", booking);
+          return ApiResponse.success(res, booking);
       
    
     } catch (err: any) {

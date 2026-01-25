@@ -71,7 +71,9 @@ async getAll({ offset, limit, sortBy, order, page }: { offset:number; limit:numb
             throw new Error("Invalid credentials.");
 
           const token = jwt.sign(
-      { id: user?.id ,},
+      { id: user?.id ,
+        role:user.role
+      },
       process.env.JWT_SECRET as string,
       { expiresIn: '1d' }
     );
@@ -91,7 +93,7 @@ async getAll({ offset, limit, sortBy, order, page }: { offset:number; limit:numb
 
     });
 
-    console.log(payload.address)
+    // console.log(payload.address)
     if (!user) throw new Error("User not found");
 
     // --- Validate role change safely ---

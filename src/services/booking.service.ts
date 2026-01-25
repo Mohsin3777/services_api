@@ -89,12 +89,31 @@ if(userId===dto.providerId){
 
 
 
-    async getBookingWithId({bookingId }: {bookingId:number, }) {
-    const data = await this.bookingRepo.findOne({
-        where: {  id:bookingId }, // If it's a relation
-    relations: ['user','service'], // Include user data if needed
+    async getBookingWithId({bookingId,userId }: {bookingId:number,userId:number }) {
+    // const data = await this.bookingRepo.findOne({
+    //     where: {  id:bookingId }, // If it's a relation
+    // relations: ['user','service'], // Include user data if needed
   
-    });
-    return { data, };
+    // });
+    // return { data, };
+
+
+        const bookingWithServiceAndSlots = await this.bookingRepo
+        .createQueryBuilder("booking")
+                .leftJoinAndSelect("booking.serviceSlot", "serviceSlot")
+
+        
+        .leftJoinAndSelect("booking.user", "user")
+        .leftJoinAndSelect("booking.service", "service")
+        .leftJoinAndSelect("service.slots", "slots") // Join service's slots
+                        .leftJoinAndSelect("service.provider", "provider")
+
+        .where("booking.id = :bookingId", { bookingId })
+        // .andWhere("booking.userId = :userId", { userId }) // Optional: filter by user
+        .getOne();
+
+    console.log(bookingWithServiceAndSlots);
+    return { booking: bookingWithServiceAndSlots };
+
   }
 }
