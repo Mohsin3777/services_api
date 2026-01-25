@@ -379,7 +379,9 @@ private async createSlot(
   const take = limit;
   const skip = (page - 1) * limit;
 
-  const [services, total] = await this.serviceRepo
+
+  
+  const query = this.serviceRepo
     .createQueryBuilder("service")
     .leftJoinAndSelect("service.slots", "slots")
 
@@ -390,20 +392,23 @@ private async createSlot(
       "provider.firstName",
       "provider.profileImage",
       "provider.role",
-    ])
+    ]);
 
-.where("provider.firstName LIKE :firstName", { firstName: `${search}%` })
+  // ✅ Apply search ONLY if not empty
+  if (search?.trim()) {
+    query.andWhere("provider.firstName LIKE :firstName", {
+      firstName: `${search}%`,
+    });
+  }
 
+  // ✅ Sorting
+  query.orderBy(`service.${sortBy}`, order);
 
-    // ✅ Sorting
-    .orderBy(`service.${sortBy}`, order)
+  // ✅ Pagination
+  query.skip(skip).take(take);
 
-    // ✅ Pagination
-    .skip(skip)
-    .take(take)
-
-    // ✅ Needed for pagination total count
-    .getManyAndCount();
+  // ✅ Execute
+  const [services, total] = await query.getManyAndCount();
     return { services, total, page, limit };
 
 

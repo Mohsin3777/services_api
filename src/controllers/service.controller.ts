@@ -4,9 +4,10 @@ import { serviceService } from "../services/service.service";
 import { CreateServiceDto } from "../dtos/create-service.dto";
 import { validateBody } from "../middlewares/validate";
 import { UpdateServiceDto } from "../dtos/update_service_dto";
-import { AuthRequest } from "../middlewares/authMiddleware";
+// import { AuthRequest } from "../middlewares/authMiddleware";
 import { buildPaginationResponse, parsePagination } from "../utils/pagination";
 import { UserRole } from "../dtos/user.dto";
+import { AuthRequest } from "../interface/auth_requent_interface";
 
 export const createService = async (req: AuthRequest, res: Response) => {
   try {
@@ -77,6 +78,8 @@ export const getServiceWithUserId = async (req: AuthRequest, res: Response) => {
   try {
     // const providerId = req.user.id; // assuming auth middleware
 var userId=Number(req.query.userId)
+var userId=Number(req.user?.id)
+
         const { page, limit, sortBy, order, offset } = parsePagination(req.query);
 
     const {services,total} = await serviceService.getServicesWithUserId({userId,  limit,page, sortBy, order});
@@ -96,6 +99,11 @@ export const getRandomServicesList = async (req: AuthRequest, res: Response) => 
   try {
     // const providerId = req.user.id; // assuming auth middleware
 const search = String(req.query.search);
+var userId=Number(req.user?.id)
+
+console.log(userId)
+console.log(search)
+
         const { page, limit, sortBy, order, offset, } = parsePagination(req.query);
 
     const {services,total} = await serviceService.getRandomServicesList({search, limit,page, sortBy, order});
